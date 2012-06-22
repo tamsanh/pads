@@ -1,4 +1,5 @@
 //Simulate an arduino connected to the server.
+//Moving the mouse inside the box will generate data
 
 import processing.net.*;
 
