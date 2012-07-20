@@ -4,12 +4,18 @@
 //import fullscreen.*;
 //import japplemenubar.*;
 import processing.net.*;
+import java.net.InetAddress;
+
 
 //FullScreen fs; 
 PImage topPlate;
 PImage botPlate;
 PImage allMap;
 PImage rest;
+
+//Getting the IP address
+InetAddress inet;
+String myIP;
 
 static int port = 8000;
 boolean serverOn = true;
@@ -25,10 +31,20 @@ color oceanColor = color(198,236,255);
 
 void setup()
 {
+
+  try {
+    inet = InetAddress.getLocalHost();
+    myIP = inet.getHostAddress();
+  }
+  catch (Exception e) {
+    e.printStackTrace();
+    myIP = "couldnt get IP"; 
+  }
+  
   topPlate = loadImage("top.gif");
   botPlate = loadImage("bot.gif");
   allMap = loadImage("all2.gif");
-  fs = new FullScreen(this); 
+  //fs = new FullScreen(this); 
   size(800, 600);
   textFont(createFont("Menlo", 16));
   //arduinoServer = new Server(this, port); 
@@ -187,6 +203,10 @@ void draw()
     }
     
   }
+  fill(255);
+  textAlign(RIGHT);
+  text("Server IP: "+myIP,width,30);
+  textAlign(LEFT);
 }
 
 int extraGraphs = 31;
