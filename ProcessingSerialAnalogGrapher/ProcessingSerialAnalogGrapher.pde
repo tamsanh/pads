@@ -2,9 +2,14 @@
 
 import processing.serial.*;
 
+// Min and Max of the values the arduino sends over serial
+ static float maximum = 1023;
+ static float minimum = 0;
+
 Serial port;
 Graph graph;
 Measure meas;
+MouseDisplay mouseDisp;
 
 void setup()
 {
@@ -12,6 +17,7 @@ void setup()
   port = new Serial(this, Serial.list()[0], 9600);
   graph = new Graph();
   meas = new Measure();
+  mouseDisp = new MouseDisplay();
 }
 
 void draw()
@@ -19,14 +25,40 @@ void draw()
   background(0);
   graph.update();
   graph.display();
-  
   meas.display();
+  mouseDisp.display();
+}
+
+class MouseDisplay
+{
+  // Display the value at the position which the mouse has highlighted
+  color c = color(255);
+  float value = 0;
+  void display()
+  {
+    value = map(mouseY, height-1, 0, minimum, maximum);
+    
+    fill(c);   
+    stroke(c);
+    line(mouseX,mouseY+15,mouseX,mouseY-15);
+    line(mouseX+15,mouseY,mouseX-15,mouseY);
+    
+    if(mouseX > width - 100)
+      textAlign(RIGHT);
+    else
+      textAlign(LEFT);
+      
+    if(mouseY < 30)
+      text(value,mouseX,mouseY+30);
+    else
+      text(value,mouseX,mouseY-5);
+  }
 }
 
 class Measure
 {
   color halfColor = color(255,100,100,200);
-  color quarterColor = color(100,100,255,200);
+  color quarterColor = color(255,100,100,100);
   // This shows lines with which to measure the data.
   void display()
   {
@@ -42,8 +74,6 @@ class Measure
 class Graph
 {
   // Max and Min of the input
-  float maximum = 1023;
-  float minimum = 0;
   
   // size of the grpah
   int gWidth;
@@ -97,6 +127,8 @@ class Graph
   }
   
   // display displays the graph
+  // two display modes. 
+    // One to that scrolls left, another that doesn't scroll.
   void display()
   {
     float lasty = pnts[width-1];
