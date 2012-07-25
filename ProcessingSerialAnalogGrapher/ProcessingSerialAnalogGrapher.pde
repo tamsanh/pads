@@ -2,144 +2,161 @@
 
 import processing.serial.*;
 
-// Min and Max of the values the arduino sends over serial
- static float maximum = 1023;
- static float minimum = 0;
-
+// This program only accepts one serial connection.
 Serial port;
-Graph graph;
-Measure meas;
-MouseDisplay mouseDisp;
-
+Graph g;
 void setup()
 {
-  size(1000,700);
-  port = new Serial(this, Serial.list()[0], 9600);
-  graph = new Graph();
-  meas = new Measure();
-  mouseDisp = new MouseDisplay();
+  // Size of the plot
+  size(800,600);
+  
+  // The port of the Serial Data we want.
+    // Serial.list()[0] is almost always the most recently connected device.
+  try
+  {
+    port = new Serial(this, Serial.list()[0], 9600);
+  }
+  catch (Exception e)
+  {
+    println("Is Arduino connected?");
+  }
+  g = new Graph(port);
+  
 }
 
 void draw()
 {
   background(0);
-  graph.update();
-  graph.display();
-  meas.display();
-  mouseDisp.display();
+  g.update();
+  g.display();
+  
+  fill(255);
+  text("Serial Grapher",10,20);
 }
 
-class MouseDisplay
-{
-  // Display the value at the position which the mouse has highlighted
-  color c = color(255);
-  float value = 0;
-  void display()
-  {
-    value = map(mouseY, height-1, 0, minimum, maximum);
-    
-    fill(c);   
-    stroke(c);
-    line(mouseX,mouseY+15,mouseX,mouseY-15);
-    line(mouseX+15,mouseY,mouseX-15,mouseY);
-    
-    if(mouseX > width - 100)
-      textAlign(RIGHT);
-    else
-      textAlign(LEFT);
-      
-    if(mouseY < 30)
-      text(value,mouseX,mouseY+30);
-    else
-      text(value,mouseX,mouseY-5);
-  }
-}
-
-class Measure
-{
-  color halfColor = color(255,100,100,200);
-  color quarterColor = color(255,100,100,100);
-  // This shows lines with which to measure the data.
-  void display()
-  {
-    stroke(halfColor);
-    line(0,(height-1)/2,width,(height-1)/2);
-    
-    stroke(quarterColor);
-    line(0,(height-1)/4,width,(height-1)/4);
-    line(0,(height-1)/4*3,width,(height-1)/4*3);
-  }
-}
 
 class Graph
 {
-  // Max and Min of the input
-  
-  // size of the grpah
-  int gWidth;
-  int gHeight;
-  int gx;
-  
-  // sets the graph color.
-  //color c = color(random(100,255),random(100,255),random(100,255));
+  // Graph color
   color c = color(255);
+  //Location of the top left corner of the graph
+  int gx;
+  int gy;
   
-  //Points to b displayed
-  float []  pnts;
+  //Values of the max and min seen on the serial device
+  float smax;
+  float smin;
   
-  Graph()
+  //Values of the maximum and minimum values which the graph needs to map to
+  int gmax;
+  int gmin;
+  
+  //Width of the graph
+  int gwidth;
+  
+  //Serial port which this graph gets its data from
+  Serial port;
+  
+  //Current array index
+  
+  int ax = 0;
+  
+  //Array of all the points that this graph holds
+  float pnts[];
+  Graph(Serial pp)
   {
-    gWidth = width;
-    gHeight = height;
     pnts = new float[width];
+    port = pp;
+    smax = 0;
+    smin = 0;
     
-    // Populate all the points
-    for(int i = 0; i < width; i++)
-      pnts[i] = height-1;
+    // This reversal makes 0 as the bottom
+    gmax = 0;
+    gmin = height-1;
+    
+    gwidth = width;
   }
   
-  // update gets a new value from the serial port to add to the graph
   void update()
   {
-    if (port.available() > 0)
+    try
     {
-      try
+      // This is a handshaking protocol.
+      // The arduino waits for the character 'A' before it sends its analog data.
+      // The delay is added so that the Arduino is not overburdened.
+        // The data we get back is much cleaner and more reliable.
+      port.write('A');
+        // port.readStringUntil(10) means "Read the serial data until a newline character is encountered (which means it's the end of the line.)"
+      String buff = port.readStringUntil(10);
+      if(buff!=null)
       {
-        String buff = port.readStringUntil(10);
-        if(buff!=null)
+        // Add the new value to our list of values
+        // at the point which we last left off.
+        float in = new Float(buff);
+        pnts[ax] = in;
+        
+        if(in > smax)
+          smax = in;
+        else if(in < smin)
+          smin = in;
+        
+        // If our graph goes over the width limit, start from the beginning
+        ax++;
+        if(ax>=width)
         {
-          float in = new Float(buff);
-          in = map(in, minimum, maximum, height-1, 0);
-          
-          float tmp2 = in;  
-          // Add in the new point, propagate down
-          for(int i = width-1; i >= 0; i--)
-          {
-            float tmp = pnts[i];
-            pnts[i] = tmp2;
-            tmp2 = tmp;
-          }
+          ax = 0;
         }
+        
+        // Uncomment the following line to show the values being read.
+        //println(buff);
       }
-      catch (Exception e)
-      {}
+      delay(10);
+    }
+    catch(Exception e)
+    {
+      e.printStackTrace();
     }
   }
   
-  // display displays the graph
-  // two display modes. 
-    // One to that scrolls left, another that doesn't scroll.
   void display()
   {
-    float lasty = pnts[width-1];
-    float curr;
+    // Map the x and map the y values
+    float lasty = map(pnts[0], smin, smax, gmin, gmax);
+    float lastx = map(0, 0, width, 0, gwidth);
+    float xmap;
+    float ymap;
+    
+    // Draw the line
     stroke(c);
-    for(int i = width-2; i>0; i--)
+    rectMode(RADIUS);
+    for(int i = 1; i<width; i++)
     {
-      curr = pnts[i];
-      line(i+1, lasty, i,curr);
-      lasty = curr;
+      ymap = map(pnts[i], smin, smax, gmin, gmax);
+      xmap = map(i,0,width,0,gwidth);
+      line(lastx,lasty, xmap, ymap);
+      lastx = xmap;
+      lasty = ymap;
+      // Display update marker
+      if(i+1==ax)
+      {
+        rect(xmap,ymap,5,5);
+        break;
+      }
+        
     }
+    
+    // Display currently high value
+    fill(c);
+    text("Max Value: "+int(smax),10,40);
+    
+    // Calculate/Display average value
+    int avg = 0;
+    for(int i = 0; i<width; i++)
+    {
+      avg += int(pnts[i]);
+    }
+    avg = avg/width;
+    text("Avg Value: "+avg,10,60);
   }
-  
 }
+
