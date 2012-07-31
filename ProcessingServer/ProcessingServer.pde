@@ -1,8 +1,6 @@
 //If there is a "Caught exception in serverEvent" error,
 //simply try connecting the arduino again
 
-//import fullscreen.*;
-//import japplemenubar.*;
 import processing.net.*;
 import java.net.InetAddress;
 
@@ -31,6 +29,9 @@ color oceanColor = color(198,236,255);
 
 void setup()
 {
+  
+  // Designates the size of the plot
+  size(800, 600);
 
   try {
     inet = InetAddress.getLocalHost();
@@ -45,12 +46,11 @@ void setup()
   botPlate = loadImage("bot.gif");
   allMap = loadImage("all2.gif");
   //fs = new FullScreen(this); 
-  size(800, 600);
   textFont(createFont("Menlo", 16));
-  arduinoServer = new Server(this, port); 
-  // Starts a myServer on port 10002
   background(oceanColor);
-  //fs.enter();
+  
+  // Starts a myServer on the port number specified by the port variable
+  arduinoServer = new Server(this, port); 
 }
 
 int tx = 0;

@@ -1,15 +1,16 @@
 #include <SPI.h>
 #include <Ethernet.h>
 
+// Enter the IP address of the server you're connecting to:
+// These two lines likely need to be changed.
+IPAddress server(192,168,1,2); 
+static int id = 7;
+
+static int port = 8000;
+IPAddress ip(192,168,1,(100+id));
+
 byte mac[] = {  
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-
-// Enter the IP address of the server you're connecting to:
-IPAddress server(192,168,0,100); 
-int port = 8000;
-int id = 6;
-
-IPAddress ip(192,168,0,(100+id));
 
 // Initialize the Ethernet client library
 // with the IP address and port of the server 
@@ -39,7 +40,7 @@ void loop()
   
   //Send the sensor data to the server
     if (client.connected()) {
-      int sen = analogRead(A5);
+      int sen = analogRead(A0);
       client.println(String(sen));
       delay(10);
     }
