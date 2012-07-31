@@ -28,15 +28,17 @@ Detailed Instructions:
 ### 3. Start the ProcessingServer
 	On the computer attached to the router, start the ProcessingServer processing code. It can be found inside the ProcessingServer folder, and can be run by double clicking on it (as long as Processing is installed in the host computer.)
 
+	Run the ProcessingServer
+
 	The important thing to do here is to take a note of the `IP Address`, written in the top right hand corner of the ProcessingServer. We will use this for our next step.
-	The format of the `IP Address` will be `X.X.X.X`, where the `X`s are numbers up to 255.
+	The format of the `IP Address` will be `192.168.X.X`, where the `X`s are numbers up to 255.
 
 ### 4. Set up Arduinos.
 	In order for the Arduinos to connect to the server, they must know the `IP Address` of the server. Open the ArduinoDistributedSensor, and modify the following files.
 
     // Enter the IP address of the server you're connecting to:
     // These two lines likely need to be changed.
-    IPAddress server(X,X,X,X); 
+    IPAddress server(192,168,X,X); 
     static int id = Y;
 
 	The lines that need to be set are the `IPAddress server(X,X,X,X)` and `int id = Y;` lines. 
@@ -46,6 +48,8 @@ Detailed Instructions:
 	Once these two lines have been changed, upload the code to their respective Arduinos.
 
 	The Arduinos will read data from the Analog Pin 0, and will send that information to the server. The server is the one that manipulates the analog data.
+
+	Before Uploading to the Arduino, be sure to turn off the ProcessingServer, and turn it back on after the Upoading is completed. Leaving it on will cause problems with the ARduino compilation.
 
 ### 5. Connect Arduinos to router
 	Once the Arduinos have each been reprogrammed with a unique id (the `Y` in step 4), they can be attached to the router using Ethernet cables.
