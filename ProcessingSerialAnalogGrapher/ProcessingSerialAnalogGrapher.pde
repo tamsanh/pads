@@ -3,6 +3,9 @@
 //+ and - to zoom in and zoom out
 //spacebar to toggle ghost trace.
 
+//Scale refers to the time it takes for the trace to cross the entire graphing screen.
+//Sample rate refers to the frequency of data sampling the system is currently doing.
+
 import processing.serial.*;
 
 // This program only accepts one serial connection.
@@ -13,13 +16,13 @@ static boolean debug = false;
 void setup()
 {
   // Size of the plot
-  size(1000,600);
+  size(900,600);
   
   // The port of the Serial Data we want.
     // Serial.list()[0] is almost always the most recently connected device.
   try
   {
-    port = new Serial(this, Serial.list()[0], 9600);
+    port = new Serial(this, Serial.list()[0], 38400);
   }
   catch (Exception e)
   {
@@ -127,85 +130,65 @@ class Graph
   
   void update()
   {
-    if(!debug)
+    try
     {
+      // This is a handshaking protocol.
+      // The arduino waits for the character 'A' before it sends its analog data.
+      // The delay is added so that the Arduino is not overburdened.
+        // The data we get back is much cleaner and more reliable.
       try
       {
-        // This is a handshaking protocol.
-        // The arduino waits for the character 'A' before it sends its analog data.
-        // The delay is added so that the Arduino is not overburdened.
-          // The data we get back is much cleaner and more reliable.
-        try
-        {
-          port.write('A');
-        }
-        catch(Exception e)
-        {
-          fill(255);
-          textAlign(CENTER);
-          text("Could not connect to serial device.",width/2,height/2);
-          textAlign(LEFT);
-          return;
-        }
-          // port.readStringUntil(10) means "Read the serial data until a newline character is encountered (which means it's the end of the line.)"
-        String buff = port.readStringUntil(10);
-        if(buff!=null)
-        {
-          // Add the new value to our list of values
-          // at the point which we last left off.
-          float in = new Float(buff);
-          pnts[ax] = in;
-          if(ghostVisible)
-            ghostpnts[currGhost][ax] = in;
-          
-          if(in > smax)
-            smax = in;
-          else if(in < smin)
-            smin = in;
-          
-          // If our graph goes over the width limit, start from the beginning
-          ax++;
-          if(ax>=gwidth)
-          {
-            ax = 0;
-            if(ghostVisible)
-            {
-              currGhost++;
-              if(currGhost>=maxGhost)
-                currGhost=0;
-            }
-          }
-          samplingRate = round(samplingRate+(samplingRate-(millis()-lastRead))*-0.3);
-          lastRead = millis();
-          
-          
-          // Uncomment the following line to show the values being read.
-          //println(buff);
-        }
-        
+        port.write('A');
       }
       catch(Exception e)
       {
-        e.printStackTrace();
+        fill(255);
+        textAlign(CENTER);
+        text("Could not connect to serial device.",width/2,height/2);
+        textAlign(LEFT);
+        return;
       }
-    }
-    else
-    {
-        float in = new Float("400");
+        // port.readStringUntil(10) means "Read the serial data until a newline character is encountered (which means it's the end of the line.)"
+      String buff = port.readStringUntil(10);
+      if(buff!=null)
+      {
+        // Add the new value to our list of values
+        // at the point which we last left off.
+        float in = new Float(buff);
         pnts[ax] = in;
+        if(ghostVisible)
+          ghostpnts[currGhost][ax] = in;
         
         if(in > smax)
           smax = in;
         else if(in < smin)
           smin = in;
-      
+        
+        // If our graph goes over the width limit, start from the beginning
         ax++;
         if(ax>=gwidth)
         {
           ax = 0;
+          if(ghostVisible)
+          {
+            currGhost++;
+            if(currGhost>=maxGhost)
+              currGhost=0;
+          }
+          
         }
-        samplingRate = round(samplingRate+(samplingRate-(millis()-lastRead))*-.4);
+        samplingRate = round(samplingRate+(samplingRate-(millis()-lastRead))*-0.3);
         lastRead = millis();
+        
+        println(in);
+        // Uncomment the following line to show the values being read.
+        //println(buff);
+      }
+      
+    }
+    catch(Exception e)
+    {
+      e.printStackTrace();
     }
     delay(10);
   }
@@ -233,16 +216,19 @@ class Graph
     for(int i = 1; i<gwidth; i++)
     {
       xmap = map(i,0,gwidth,0,width);
-      for(int j = 0; ghostVisible && j < maxGhost; j++)
+      if(ghostVisible)
       {
-        if(j==currGhost)
+        for(int j = 0; j < maxGhost; j++)
         {
-          continue;
+          if(j==currGhost)
+          {
+            continue;
+          }
+          ymapghost[j] = map(ghostpnts[j][i], smin, smax, gmin, gmax);
+          stroke(255,100,100);
+          line(lastx,lastyghost[j],xmap, ymapghost[j]);
+          lastyghost[j] = ymapghost[j];
         }
-        ymapghost[j] = map(ghostpnts[j][i], smin, smax, gmin, gmax);
-        stroke(255,100,100);
-        line(lastx,lastyghost[j],xmap, ymapghost[j]);
-        lastyghost[j] = ymapghost[j];
       }
       
       ymap = map(pnts[i], smin, smax, gmin, gmax);
@@ -277,7 +263,7 @@ class Graph
     // Scale will be computed as the total width of the screen, in seconds.
     // If it takes 0.017 seoncds per sample (per pixel), then that means that the width is 13.6 seconds.
     text("Scale: "+((float(gwidth)/float(width))*(samplingRate/1000)*width)+"s", 10, 60);
-    text("Sampling Rate: "+round(1/(samplingRate/1000))+" Hz", 10, 80);
+    text("Sampling Rate: ~"+round(1/(samplingRate/1000))+" Hz", 10, 80);
   }
 }
 

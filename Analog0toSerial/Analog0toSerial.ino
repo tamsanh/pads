@@ -1,7 +1,8 @@
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(38400);
+  digitalWrite(A0,HIGH);
 }
 
 void loop()
@@ -10,10 +11,8 @@ void loop()
   byte incomingByte;
   if (Serial.available() > 0) {
     incomingByte = Serial.read();
-    if(incomingByte=='A')
-    {
-      int a = analogRead(A0);
-      Serial.println(a);
-    }
+    int a = analogRead(A0);
+    Serial.println(a);
+    delay(10);
   }
 }
