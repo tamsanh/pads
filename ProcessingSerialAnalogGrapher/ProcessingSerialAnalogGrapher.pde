@@ -5,7 +5,7 @@ import processing.serial.*;
 // This program only accepts one serial connection.
 Serial port;
 Graph g;
-static boolean debug = true;
+static boolean debug = false;
 void setup()
 {
   // Size of the plot
@@ -53,10 +53,10 @@ class Graph
   
   //Width of the graph
   int gwidth;
-  int zoomScale = 10;
+  float zoomScale = 1;
   
   //Sample rate in miliseconds
-  float samplingRate;
+  float samplingRate=1;
   int lastRead;
   
   //Serial port which this graph gets its data from
@@ -84,14 +84,18 @@ class Graph
   
   void zoomIn()
   {
-    if(gwidth>zoomScale)
+    if (gwidth <= 10)
+    {
+      gwidth = 10;
+      textAlign(CENTER);
+      text("Maximum Zoom",width/2,height/2);
+      textAlign(LEFT);
+    }
+    else
     {
       gwidth-=zoomScale;
     }
-    else if (gwidth <= zoomScale)
-    {
-      gwidth = zoomScale;
-    }
+    zoomScale = (float(gwidth)/float(width))*5+1;
   }
   
   void zoomOut()
@@ -103,7 +107,11 @@ class Graph
     else if (gwidth >= width-zoomScale)
     {
       gwidth = width;
+      textAlign(CENTER);
+      text("Minimum Zoom",width/2,height/2);
+      textAlign(LEFT);
     }
+    zoomScale = float(gwidth)/float(width)*5+1;
   }
   
   void update()
