@@ -1,15 +1,19 @@
 // This will graph arduino analog values from 0 to 1023
 
+//+ and - to zoom in and zoom out
+//spacebar to toggle ghost trace.
+
 import processing.serial.*;
 
 // This program only accepts one serial connection.
 Serial port;
 Graph g;
 static boolean debug = false;
+
 void setup()
 {
   // Size of the plot
-  size(800,600);
+  size(1000,600);
   
   // The port of the Serial Data we want.
     // Serial.list()[0] is almost always the most recently connected device.
@@ -68,9 +72,16 @@ class Graph
   
   //Array of all the points that this graph holds
   float pnts[];
+  float ghostpnts[][];
+  
+  int maxGhost = 2;
+  int currGhost = 0;
+  boolean ghostVisible = false;
+  
   Graph(Serial pp)
   {
     pnts = new float[width];
+    ghostpnts = new float[maxGhost][width];
     port = pp;
     smax = 0;
     smin = 0;
@@ -86,7 +97,7 @@ class Graph
   {
     if (gwidth <= 10)
     {
-      gwidth = 10;
+      gwidth = width/150;
       textAlign(CENTER);
       text("Maximum Zoom",width/2,height/2);
       textAlign(LEFT);
@@ -144,6 +155,8 @@ class Graph
           // at the point which we last left off.
           float in = new Float(buff);
           pnts[ax] = in;
+          if(ghostVisible)
+            ghostpnts[currGhost][ax] = in;
           
           if(in > smax)
             smax = in;
@@ -155,6 +168,12 @@ class Graph
           if(ax>=gwidth)
           {
             ax = 0;
+            if(ghostVisible)
+            {
+              currGhost++;
+              if(currGhost>=maxGhost)
+                currGhost=0;
+            }
           }
           samplingRate = round(samplingRate+(samplingRate-(millis()-lastRead))*-0.3);
           lastRead = millis();
@@ -194,6 +213,15 @@ class Graph
   void display()
   {
     // Map the x and map the y values
+    float lastyghost[] = new float[maxGhost];
+    float ymapghost[] = new float[maxGhost];
+    if(ghostVisible)
+    {
+      for(int i = 0; i < maxGhost; i++)
+      {
+        lastyghost[i] = map(ghostpnts[i][0], smin, smax, gmin, gmax);
+      }
+    }
     float lasty = map(pnts[0], smin, smax, gmin, gmax);
     float lastx = map(0, 0, gwidth, 0, width);
     float xmap;
@@ -204,11 +232,25 @@ class Graph
     rectMode(RADIUS);
     for(int i = 1; i<gwidth; i++)
     {
-      ymap = map(pnts[i], smin, smax, gmin, gmax);
       xmap = map(i,0,gwidth,0,width);
+      for(int j = 0; ghostVisible && j < maxGhost; j++)
+      {
+        if(j==currGhost)
+        {
+          continue;
+        }
+        ymapghost[j] = map(ghostpnts[j][i], smin, smax, gmin, gmax);
+        stroke(255,100,100);
+        line(lastx,lastyghost[j],xmap, ymapghost[j]);
+        lastyghost[j] = ymapghost[j];
+      }
+      
+      ymap = map(pnts[i], smin, smax, gmin, gmax);
+      stroke(255);
       line(lastx,lasty, xmap, ymap);
-      lastx = xmap;
       lasty = ymap;
+      
+      lastx = xmap;
       // Display update marker
       if(i+1==ax)
       {
@@ -248,6 +290,10 @@ void keyPressed()
   else if(key=='-'||key=='_')
   {
     g.zoomOut();
+  }
+  else if(key==' ')
+  {
+    g.ghostVisible = !g.ghostVisible;
   }
 }
 
