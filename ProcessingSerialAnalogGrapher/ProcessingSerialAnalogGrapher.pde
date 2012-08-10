@@ -11,7 +11,6 @@ import processing.serial.*;
 // This program only accepts one serial connection.
 Serial port;
 Graph g;
-static boolean debug = false;
 
 void setup()
 {
@@ -81,6 +80,8 @@ class Graph
   int currGhost = 0;
   boolean ghostVisible = false;
   
+  int delayRate = 100;
+  
   Graph(Serial pp)
   {
     pnts = new float[width];
@@ -148,6 +149,12 @@ class Graph
         textAlign(LEFT);
         return;
       }
+      
+      delay(delayRate);
+      
+      while(port.available()<0)
+      {
+      }
         // port.readStringUntil(10) means "Read the serial data until a newline character is encountered (which means it's the end of the line.)"
       String buff = port.readStringUntil(10);
       if(buff!=null)
@@ -180,7 +187,7 @@ class Graph
         samplingRate = round(samplingRate+(samplingRate-(millis()-lastRead))*-0.3);
         lastRead = millis();
         
-        println(in);
+        // println(in);
         // Uncomment the following line to show the values being read.
         //println(buff);
       }
@@ -190,7 +197,6 @@ class Graph
     {
       e.printStackTrace();
     }
-    delay(10);
   }
   
   void display()
@@ -280,6 +286,19 @@ void keyPressed()
   else if(key==' ')
   {
     g.ghostVisible = !g.ghostVisible;
+  }
+  else if(key==CODED)
+  {
+    if(keyCode == UP && g.delayRate>0)
+    {
+      //Increase clock speed
+      //Decrease delay
+      g.delayRate = g.delayRate - 2;
+    }
+    else if(keyCode == DOWN)
+    {
+      g.delayRate = g.delayRate + 2;
+    }
   }
 }
 

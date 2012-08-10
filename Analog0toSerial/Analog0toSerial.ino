@@ -2,7 +2,6 @@
 void setup()
 {
   Serial.begin(38400);
-  digitalWrite(A0,HIGH);
 }
 
 void loop()
@@ -13,6 +12,5 @@ void loop()
     incomingByte = Serial.read();
     int a = analogRead(A0);
     Serial.println(a);
-    delay(10);
   }
 }
